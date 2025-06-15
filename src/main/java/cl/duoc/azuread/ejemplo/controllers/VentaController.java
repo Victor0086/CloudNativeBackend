@@ -2,6 +2,7 @@ package cl.duoc.azuread.ejemplo.controllers;
 
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,4 +43,13 @@ public class VentaController {
     public ResponseEntity<Venta> registrarVenta(@RequestBody Venta venta) {
         return ResponseEntity.ok(service.crearVenta(venta));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarVenta(@PathVariable Long id) {
+        if (service.eliminarVenta(id)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }    
 }

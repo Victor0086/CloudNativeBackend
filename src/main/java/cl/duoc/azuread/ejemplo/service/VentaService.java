@@ -48,4 +48,11 @@ public class VentaService {
     public List<Venta> buscarPorCliente(String email) {
         return ventaRepo.findByCliente(email);
     }
+    public boolean eliminarVenta(Long id) {
+        if (ventaRepo.existsById(id)) {
+            ventaRepo.deleteById(id);
+            return true;
+        }
+        return false;
+    }        
 }
