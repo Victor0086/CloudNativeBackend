@@ -1,5 +1,7 @@
 package cl.duoc.azuread.ejemplo.model;
 
+
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Entity;
@@ -11,7 +13,7 @@ import jakarta.persistence.ManyToOne;
 
 @Entity
 public class ProductoVendido {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

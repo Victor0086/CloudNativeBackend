@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import cl.duoc.azuread.ejemplo.model.Promocion;
+import cl.duoc.azuread.ejemplo.service.PromocionRabbitProducer;
 import cl.duoc.azuread.ejemplo.service.PromocionService;
 
 @RestController
@@ -18,9 +19,11 @@ import cl.duoc.azuread.ejemplo.service.PromocionService;
 public class PromocionController {
 
     private final PromocionService promocionService;
+    private final PromocionRabbitProducer rabbitProducer;
 
-    public PromocionController(PromocionService promocionService) {
+    public PromocionController(PromocionService promocionService, PromocionRabbitProducer rabbitProducer) {
         this.promocionService = promocionService;
+        this.rabbitProducer = rabbitProducer;
     }
 
     @GetMapping
@@ -30,7 +33,9 @@ public class PromocionController {
 
     @PostMapping
     public Promocion save(@RequestBody Promocion promocion) {
-        return promocionService.guardar(promocion);
+        Promocion guardada = promocionService.guardar(promocion);
+        rabbitProducer.enviarPromocion(guardada);
+        return guardada;
     }
 
     @DeleteMapping("/{id}")

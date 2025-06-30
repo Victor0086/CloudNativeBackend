@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import cl.duoc.azuread.ejemplo.dto.ProductoDTO;
+import cl.duoc.azuread.ejemplo.dto.VentaDTO;
 import cl.duoc.azuread.ejemplo.model.Venta;
+import cl.duoc.azuread.ejemplo.service.RabbitProducerService;
 import cl.duoc.azuread.ejemplo.service.VentaService;
 
 @RestController
@@ -18,10 +21,13 @@ import cl.duoc.azuread.ejemplo.service.VentaService;
 public class VentaController {
 
     private final VentaService service;
+    private final RabbitProducerService servicioRabbit;
 
-    public VentaController(VentaService service) {
+    public VentaController(VentaService service, RabbitProducerService servicioRabbit) {
         this.service = service;
+        this.servicioRabbit = servicioRabbit;
     }
+
 
     @GetMapping
     public List<Venta> listarVentas() {
@@ -40,9 +46,29 @@ public class VentaController {
 
 
     @PostMapping
-    public ResponseEntity<Venta> registrarVenta(@RequestBody Venta venta) {
-        return ResponseEntity.ok(service.crearVenta(venta));
+    public ResponseEntity<String> registrarVenta(@RequestBody Venta venta) {
+        Venta creada = service.crearVenta(venta); // Guarda en BD
+
+        // Convertir a DTO
+        VentaDTO ventaDTO = new VentaDTO();
+        ventaDTO.setCliente(creada.getCliente());
+        ventaDTO.setTotal(creada.getTotal());
+
+        List<ProductoDTO> productosDTO = creada.getProductos().stream().map(p -> {
+            ProductoDTO pdto = new ProductoDTO();
+            pdto.setNombreProducto(p.getNombreProducto());
+            pdto.setPrecioUnitario(p.getPrecioUnitario());
+            return pdto;
+        }).toList();
+
+        ventaDTO.setProductos(productosDTO);
+
+        servicioRabbit.enviarVenta(ventaDTO); // Enviar DTO a RabbitMQ
+        return ResponseEntity.ok("Venta registrada y enviada a RabbitMQ");
     }
+
+
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarVenta(@PathVariable Long id) {

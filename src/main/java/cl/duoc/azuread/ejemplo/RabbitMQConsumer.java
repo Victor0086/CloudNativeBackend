@@ -1,53 +1,56 @@
 package cl.duoc.azuread.ejemplo;
 
-
-import java.nio.charset.StandardCharsets;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import cl.duoc.azuread.ejemplo.service.MensajeService;
-import jakarta.annotation.PostConstruct;
 
+import cl.duoc.azuread.ejemplo.dto.ProductoDTO;
+import cl.duoc.azuread.ejemplo.dto.VentaDTO;
+import cl.duoc.azuread.ejemplo.model.Promocion;
+import cl.duoc.azuread.ejemplo.service.VentaService;
+import cl.duoc.azuread.ejemplo.service.PromocionRabbitProducer;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+import java.time.LocalDate;
 
 @Component
 public class RabbitMQConsumer {
 
+
     @Autowired
-    private MensajeService mensajeService;
-    @PostConstruct
-    public void consumirCola() throws Exception {
-        ConnectionFactory factory = new ConnectionFactory();
-        System.out.println(">>> Iniciando consumidor RabbitMQ...");
-        factory.setHost("rabbitmq");
-        factory.setUsername("guest");
-        factory.setPassword("guest");
+    private VentaService ventaService;
 
-        Connection connection = factory.newConnection();
-        Channel channel = connection.createChannel();
+    @Autowired
+    private PromocionRabbitProducer promocionRabbitProducer;
 
-        // Declarar el exchange y la cola
-        // y vincularlos con una routing key
-        String exchangeName = "myExchange";
-        String routingKey = "myKey";
-        String queueName = "mensajes.colas";
+    
 
-        channel.exchangeDeclare(exchangeName, "direct", true); // tipo: direct
 
-        // Declarar la cola
-        channel.queueDeclare(queueName, true, false, false, null);
+    //  Consumidor de mensajes JSON desde la cola "ventas"
+    @RabbitListener(queues = "ventas")
+    public void recibirVenta(VentaDTO venta) {
+        System.out.println("[✓] Venta recibida desde RabbitMQ: " + venta.getCliente());
 
-        // Vincular la cola al exchange con la routing key
-        channel.queueBind(queueName, exchangeName, routingKey);
+        for (ProductoDTO producto : venta.getProductos()) {
+            System.out.println("Producto: " + producto.getNombreProducto());
 
-        // Consumir mensajes normalmente
-        channel.basicConsume(queueName, true, (tag, delivery) -> {
-            String mensaje = new String(delivery.getBody(), StandardCharsets.UTF_8);
-            System.out.println("[x] Recibido: " + mensaje);
-            mensajeService.guardarMensaje(mensaje);
-        }, tag -> {});
+            // Crear una promoción por cada producto
+            Promocion promo = new Promocion();
+            promo.setDescripcion("Descuento especial en accesorios para tu " + producto.getNombreProducto());
+            promo.setDescuento(10.0); // 10%
+            promo.setFechaInicio(new java.sql.Date(System.currentTimeMillis()));
+            promo.setFechaFin(java.sql.Date.valueOf(LocalDate.now().plusDays(7))); // 7 días de validez
+
+            // Enviar la promoción a RabbitMQ
+            promocionRabbitProducer.enviarPromocion(promo);
+        }
+
+        // Guardar venta en Oracle
+        ventaService.guardarVenta(venta);
     }
 
-}
 
+
+}

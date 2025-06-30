@@ -10,16 +10,34 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+	/* 
+	@Bean
+	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.cors(Customizer.withDefaults())
+			.authorizeHttpRequests(auth -> auth
+				.requestMatchers(
+					"/promociones",
+					"/ventas",
+					"/productos",
+					"/mensajes",
+					"/admin/**"   // si usas endpoints como /admin/rabbit/...
+				).permitAll()
+				.anyRequest().authenticated()
+			)
+			.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+
+		return http.build();
+	}
+		*/
 
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.cors(Customizer.withDefaults())
+			.csrf(csrf -> csrf.disable()) // Desactivar CSRF en pruebas locales
+			.authorizeHttpRequests(auth -> auth
+				.anyRequest().permitAll() // Permitir todas las rutas temporalmente
+			);
 
-		// WebSecurityConfigurerAdapter = antigua
-
-		http.cors(Customizer.withDefaults()).authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-				.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
 		return http.build();
 	}
-
-	
 }
