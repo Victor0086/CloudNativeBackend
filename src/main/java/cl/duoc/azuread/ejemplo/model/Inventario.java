@@ -20,7 +20,7 @@ public class Inventario {
     @Column(name = "STOCK")
     private int stock;
     @Column(name = "PRECIO")
-    private double precio;
+    private Double precio;
 
     // Getters y setters
     public Long getId() {
@@ -41,10 +41,10 @@ public class Inventario {
     public void setStock(int stock) {
         this.stock = stock;
     }
-    public double getPrecio() {
+    public Double getPrecio() {
         return precio;
     }
-    public void setPrecio(double precio) {
+    public void setPrecio(Double precio) {
         this.precio = precio;
     }
     

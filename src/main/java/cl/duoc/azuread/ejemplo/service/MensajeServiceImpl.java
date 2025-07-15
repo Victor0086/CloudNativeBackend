@@ -53,19 +53,6 @@ public class MensajeServiceImpl implements MensajeService {
         System.out.println("[→] Enviado a cola principal: " + mensaje);
     }
 
-
-    @Override
-    public void enviarMensajeVentas(Object venta){
-        rabbitTemplate.convertAndSend(RabbitMQConfig.COLA_VENTAS, venta);
-        System.out.println("[→] Enviado a cola de ventas: " + venta);
-    }
-    @Override
-    public void enviarMensajePromocion(Object promo) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.COLA_PROMOCIONES, promo);
-        System.out.println("[→] Enviado a cola de promociones: " + promo);
-    }
-
-
     @RabbitListener(id = "listener-myQueue", queues =  "mensajes.colas2", ackMode = "MANUAL")
     public void recibirMensajeConAckManual(Message mensaje, Channel canal) throws IOException {
         try {

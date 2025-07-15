@@ -17,5 +17,5 @@ COPY src/main/resources/Wallet_WV80UNLYMHJZX3G3 /app/wallet
 # Define la variable de entorno TNS_ADMIN para que Oracle la use
 ENV TNS_ADMIN=/app/wallet
 
-# Ejecuta la aplicación
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Ejecuta la aplicación con configuración de Kafka para Docker
+ENTRYPOINT ["java", "-Dkafka.bootstrap.servers=kafka-1:19092,kafka-2:19093,kafka-3:19094", "-jar", "app.jar"]

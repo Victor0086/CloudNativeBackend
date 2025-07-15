@@ -15,6 +15,7 @@ import cl.duoc.azuread.ejemplo.dto.VentaDTO;
 import cl.duoc.azuread.ejemplo.model.Venta;
 import cl.duoc.azuread.ejemplo.service.RabbitProducerService;
 import cl.duoc.azuread.ejemplo.service.VentaService;
+import cl.duoc.azuread.ejemplo.service.KafkaVentasProducerService;
 
 @RestController
 @RequestMapping("/ventas")
@@ -22,10 +23,13 @@ public class VentaController {
 
     private final VentaService service;
     private final RabbitProducerService servicioRabbit;
+    private final KafkaVentasProducerService kafkaVentasProducer;
 
-    public VentaController(VentaService service, RabbitProducerService servicioRabbit) {
+    public VentaController(VentaService service, RabbitProducerService servicioRabbit, 
+                          KafkaVentasProducerService kafkaVentasProducer) {
         this.service = service;
         this.servicioRabbit = servicioRabbit;
+        this.kafkaVentasProducer = kafkaVentasProducer;
     }
 
 
@@ -49,7 +53,7 @@ public class VentaController {
     public ResponseEntity<String> registrarVenta(@RequestBody Venta venta) {
         Venta creada = service.crearVenta(venta); // Guarda en BD
 
-        // Convertir a DTO
+        // Convertir a DTO para RabbitMQ
         VentaDTO ventaDTO = new VentaDTO();
         ventaDTO.setCliente(creada.getCliente());
         ventaDTO.setTotal(creada.getTotal());
@@ -63,8 +67,16 @@ public class VentaController {
 
         ventaDTO.setProductos(productosDTO);
 
-        servicioRabbit.enviarVenta(ventaDTO); // Enviar DTO a RabbitMQ
-        return ResponseEntity.ok("Venta registrada y enviada a RabbitMQ");
+        // Enviar a RabbitMQ (sistema existente)
+        servicioRabbit.enviarVenta(ventaDTO);
+        
+        //  NUEVO: Enviar a Kafka para procesamiento de inventario
+        kafkaVentasProducer.publicarVenta(creada);
+        
+        return ResponseEntity.ok(" Venta registrada y enviada a RabbitMQ y Kafka\n" +
+                               "ID Venta: " + creada.getId() + "\n" +
+                               " Total: $" + creada.getTotal() + "\n" +
+                               " Procesamiento de inventario iniciado");
     }
 
 
